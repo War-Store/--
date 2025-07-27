@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -15,7 +16,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 380, 0, 230)
+frame.Size = UDim2.new(0, 380, 0, 270) -- زودت الطول عشان الزر الجديد
 frame.Position = UDim2.new(0.04, 0, 0.04, 0)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 32)
 frame.BackgroundTransparency = 0.05
@@ -33,10 +34,10 @@ gradient.Color = ColorSequence.new{
 }
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0.14, 0)
+title.Size = UDim2.new(1, 0, 0.12, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🚀 Elite Teleport & Boost"
+title.Text = "🚀 Elite Teleport & Boost + Tool"
 title.Font = Enum.Font.GothamBlack
 title.TextScaled = true
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -45,7 +46,7 @@ title.Parent = frame
 -- دالة إنشاء أزرار أنيقة
 local function createButton(text, ypos, color)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.8, 0, 0.19, 0)
+	btn.Size = UDim2.new(0.8, 0, 0.15, 0)
 	btn.Position = UDim2.new(0.1, 0, ypos, 0)
 	btn.BackgroundColor3 = color
 	btn.Text = text
@@ -59,15 +60,16 @@ local function createButton(text, ypos, color)
 	return btn
 end
 
-local saveBtn = createButton("💾 Save Location", 0.25, Color3.fromRGB(0, 160, 240))
-local teleportBtn = createButton("✈ Teleport Now", 0.52, Color3.fromRGB(0, 230, 120))
+local saveBtn = createButton("💾 Save Location", 0.2, Color3.fromRGB(0, 160, 240))
+local teleportBtn = createButton("✈ Teleport Now", 0.38, Color3.fromRGB(0, 230, 120))
 teleportBtn.Visible = false
-local boostBtn = createButton("⚡ Activate Boost", 0.79, Color3.fromRGB(220, 50, 70))
+local boostBtn = createButton("⚡ Activate Boost", 0.56, Color3.fromRGB(220, 50, 70))
+local getToolBtn = createButton("🛠 Get Tool", 0.74, Color3.fromRGB(180, 180, 40))
 
 -- مؤشر Boost
 local indicator = Instance.new("Frame", frame)
 indicator.Size = UDim2.new(0, 24, 0, 24)
-indicator.Position = UDim2.new(0.9, 0, 0.81, 0)
+indicator.Position = UDim2.new(0.9, 0, 0.59, 0)
 indicator.BackgroundColor3 = Color3.fromRGB(230, 20, 20)
 indicator.BorderSizePixel = 0
 local indicatorCorner = Instance.new("UICorner", indicator)
@@ -151,9 +153,7 @@ teleportBtn.MouseButton1Click:Connect(function()
 			clearObstacles(hrp.Position, savedPosition)
 			teleportEffect(hrp.Position)
 			teleportEffect(savedPosition)
-			-- نقل عن طريق MoveTo لتقليل مشاكل الحماية
 			humanoid:MoveTo(savedPosition)
-			-- تعديل الاتجاه تدريجيا لجعل الشكل أجمل
 			for i = 0, 1, 0.1 do
 				hrp.Orientation = Vector3.new(
 					hrp.Orientation.X,
@@ -180,4 +180,56 @@ boostBtn.MouseButton1Click:Connect(function()
 	indicator.BackgroundColor3 = Color3.fromRGB(230, 20, 20)
 	blur.Size = 0
 	boosting = false
+end)
+
+-- زر التول والأنيميشن
+getToolBtn.MouseButton1Click:Connect(function()
+	-- تحقق إذا التول موجود مسبقاً في الحقيبة
+	if player.Backpack:FindFirstChild("EliteTool") or character:FindFirstChild("EliteTool") then
+		getToolBtn.Text = "✅ Tool Already Owned"
+		wait(1.5)
+		getToolBtn.Text = "🛠 Get Tool"
+		return
+	end
+	
+	-- إنشاء التول
+	local tool = Instance.new("Tool")
+	tool.Name = "EliteTool"
+	tool.RequiresHandle = false
+	tool.CanBeDropped = true
+
+	-- إضافة أنيميشن للـ tool
+	local animator
+	local animation = Instance.new("Animation")
+	animation.AnimationId = "rbxassetid://135879895990983"
+
+	-- عند تفعيل التول (Equip)
+	tool.Equipped:Connect(function()
+		if not animator and humanoid then
+			animator = humanoid:FindFirstChildOfClass("Animator")
+			if not animator then
+				animator = Instance.new("Animator")
+				animator.Parent = humanoid
+			end
+		end
+		if animator then
+			local animTrack = animator:LoadAnimation(animation)
+			animTrack:Play()
+			tool.AnimTrack = animTrack
+		end
+	end)
+
+	-- عند خلع التول (Unequip)
+	tool.Unequipped:Connect(function()
+		if tool.AnimTrack then
+			tool.AnimTrack:Stop()
+			tool.AnimTrack = nil
+		end
+	end)
+
+	-- إعطاء التول للاعب
+	tool.Parent = player.Backpack
+	getToolBtn.Text = "✅ Tool Added!"
+	wait(1.5)
+	getToolBtn.Text = "🛠 Get Tool"
 end)
