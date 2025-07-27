@@ -5,158 +5,179 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local humanoid = char:WaitForChild("Humanoid")
-local hrp = char:WaitForChild("HumanoidRootPart")
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 
 -- إنشاء الواجهة
 local gui = Instance.new("ScreenGui")
-gui.Name = "TeleportBoostUI"
+gui.Name = "EliteTeleportBoostUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 350, 0, 220)
-frame.Position = UDim2.new(0.05, 0, 0.05, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-frame.BackgroundTransparency = 0.1
+frame.Size = UDim2.new(0, 380, 0, 230)
+frame.Position = UDim2.new(0.04, 0, 0.04, 0)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 32)
+frame.BackgroundTransparency = 0.05
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(0, 16)
-uicorner.Parent = frame
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 18)
+
+local gradient = Instance.new("UIGradient", frame)
+gradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 70)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 28))
+}
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0.15, 0)
+title.Size = UDim2.new(1, 0, 0.14, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🚀 Teleport & Boost"
-title.Font = Enum.Font.GothamBold
+title.Text = "🚀 Elite Teleport & Boost"
+title.Font = Enum.Font.GothamBlack
 title.TextScaled = true
-title.TextColor3 = Color3.new(1, 1, 1)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Parent = frame
 
--- دالة لإنشاء أزرار بشكل مرتب
-local function createButton(text, yPos, color)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.8, 0, 0.18, 0)
-    btn.Position = UDim2.new(0.1, 0, yPos, 0)
-    btn.BackgroundColor3 = color
-    btn.Text = text
-    btn.Font = Enum.Font.GothamBold
-    btn.TextScaled = true
-    btn.TextColor3 = Color3.new(1,1,1)
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 12)
-    btn.Parent = frame
-    return btn
+-- دالة إنشاء أزرار أنيقة
+local function createButton(text, ypos, color)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.8, 0, 0.19, 0)
+	btn.Position = UDim2.new(0.1, 0, ypos, 0)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextScaled = true
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.AutoButtonColor = true
+	btn.Parent = frame
+	local c = Instance.new("UICorner", btn)
+	c.CornerRadius = UDim.new(0, 14)
+	return btn
 end
 
-local saveButton = createButton("💾 Save Location", 0.25, Color3.fromRGB(0, 150, 255))
-local teleportButton = createButton("✈ Teleport", 0.5, Color3.fromRGB(0, 200, 100))
-teleportButton.Visible = false
-local boostButton = createButton("⚡ Boost", 0.75, Color3.fromRGB(255, 70, 70))
+local saveBtn = createButton("💾 Save Location", 0.25, Color3.fromRGB(0, 160, 240))
+local teleportBtn = createButton("✈ Teleport Now", 0.52, Color3.fromRGB(0, 230, 120))
+teleportBtn.Visible = false
+local boostBtn = createButton("⚡ Activate Boost", 0.79, Color3.fromRGB(220, 50, 70))
 
+-- مؤشر Boost
 local indicator = Instance.new("Frame", frame)
-indicator.Size = UDim2.new(0, 22, 0, 22)
-indicator.Position = UDim2.new(0.87, 0, 0.77, 0)
-indicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+indicator.Size = UDim2.new(0, 24, 0, 24)
+indicator.Position = UDim2.new(0.9, 0, 0.81, 0)
+indicator.BackgroundColor3 = Color3.fromRGB(230, 20, 20)
 indicator.BorderSizePixel = 0
 local indicatorCorner = Instance.new("UICorner", indicator)
 indicatorCorner.CornerRadius = UDim.new(1, 0)
 
--- تأثير Blur للـ Boost
+-- تأثير Blur للـBoost
 local blur = Lighting:FindFirstChild("BoostBlur")
 if not blur then
-    blur = Instance.new("BlurEffect")
-    blur.Name = "BoostBlur"
-    blur.Size = 0
-    blur.Parent = Lighting
+	blur = Instance.new("BlurEffect")
+	blur.Name = "BoostBlur"
+	blur.Size = 0
+	blur.Parent = Lighting
 end
 
--- حماية اللاعب (GodMode)
+-- GodMode حماية اللاعب من الموت
 humanoid.MaxHealth = math.huge
 humanoid.Health = math.huge
 humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-    if humanoid.Health < 100 then
-        humanoid.Health = math.huge
-    end
+	if humanoid.Health < 100 then
+		humanoid.Health = math.huge
+	end
 end)
 
--- متغيرات
-local savedCFrame = nil
-local isBoosting = false
+local savedPosition = nil
+local savedOrientation = nil
+local boosting = false
 
 -- تنظيف الطريق بين نقطتين
-local function clearObstacles(startPos, endPos)
-    local direction = (endPos - startPos)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {char}
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    rayParams.IgnoreWater = true
-
-    local hit = Workspace:Raycast(startPos, direction, rayParams)
-    while hit do
-        local part = hit.Instance
-        if part and part:IsA("BasePart") and part.Anchored then
-            part:Destroy()
-        end
-        hit = Workspace:Raycast(startPos, direction, rayParams)
-    end
+local function clearObstacles(fromPos, toPos)
+	local direction = toPos - fromPos
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {character}
+	rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+	rayParams.IgnoreWater = true
+	
+	local hit = Workspace:Raycast(fromPos, direction, rayParams)
+	while hit do
+		local part = hit.Instance
+		if part and part:IsA("BasePart") and part.Anchored then
+			part:Destroy()
+		end
+		hit = Workspace:Raycast(fromPos, direction, rayParams)
+	end
 end
 
 -- مؤثر بصري للانتقال
 local function teleportEffect(pos)
-    local orb = Instance.new("Part")
-    orb.Shape = Enum.PartType.Ball
-    orb.Size = Vector3.new(5,5,5)
-    orb.CFrame = CFrame.new(pos)
-    orb.Anchored = true
-    orb.CanCollide = false
-    orb.Material = Enum.Material.Neon
-    orb.Transparency = 0.5
-    orb.Color = Color3.fromRGB(0, 170, 255)
-    orb.Parent = Workspace
-
-    TweenService:Create(orb, TweenInfo.new(0.6), {Size = Vector3.new(0,0,0), Transparency = 1}):Play()
-    game:GetService("Debris"):AddItem(orb, 1)
+	local orb = Instance.new("Part")
+	orb.Shape = Enum.PartType.Ball
+	orb.Size = Vector3.new(6,6,6)
+	orb.CFrame = CFrame.new(pos)
+	orb.Anchored = true
+	orb.CanCollide = false
+	orb.Material = Enum.Material.Neon
+	orb.Transparency = 0.5
+	orb.Color = Color3.fromRGB(0, 170, 255)
+	orb.Parent = Workspace
+	
+	TweenService:Create(orb, TweenInfo.new(0.6), {Size = Vector3.new(0,0,0), Transparency = 1}):Play()
+	game:GetService("Debris"):AddItem(orb, 1)
 end
 
--- حفظ المكان عند الضغط
-saveButton.MouseButton1Click:Connect(function()
-    if hrp then
-        savedCFrame = hrp.CFrame
-        saveButton.Text = "✅ Location Saved"
-        teleportButton.Visible = true
-        wait(1.2)
-        saveButton.Text = "💾 Save Location"
-    end
+-- حفظ الموقع
+saveBtn.MouseButton1Click:Connect(function()
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		savedPosition = hrp.Position
+		savedOrientation = hrp.Orientation
+		saveBtn.Text = "✅ Location Saved"
+		teleportBtn.Visible = true
+		wait(1)
+		saveBtn.Text = "💾 Save Location"
+	end
 end)
 
--- التليبورت عند الضغط
-teleportButton.MouseButton1Click:Connect(function()
-    if savedCFrame then
-        clearObstacles(hrp.Position, savedCFrame.Position)
-        teleportEffect(hrp.Position)
-        teleportEffect(savedCFrame.Position)
-        char:PivotTo(savedCFrame)
-    end
+-- انتقال اللاعب بأمان بدون ارتداد
+teleportBtn.MouseButton1Click:Connect(function()
+	if savedPosition then
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			clearObstacles(hrp.Position, savedPosition)
+			teleportEffect(hrp.Position)
+			teleportEffect(savedPosition)
+			-- نقل عن طريق MoveTo لتقليل مشاكل الحماية
+			humanoid:MoveTo(savedPosition)
+			-- تعديل الاتجاه تدريجيا لجعل الشكل أجمل
+			for i = 0, 1, 0.1 do
+				hrp.Orientation = Vector3.new(
+					hrp.Orientation.X,
+					hrp.Orientation.Y + (savedOrientation.Y - hrp.Orientation.Y) * i,
+					hrp.Orientation.Z
+				)
+				wait(0.03)
+			end
+		end
+	end
 end)
 
--- Boost مع تغيير لون المؤشر وتفعيل تأثيرات
-boostButton.MouseButton1Click:Connect(function()
-    if isBoosting then return end
-    isBoosting = true
-    indicator.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    humanoid.WalkSpeed = 44
-    blur.Size = 15
+-- تفعيل الـ Boost مع مؤثرات
+boostBtn.MouseButton1Click:Connect(function()
+	if boosting then return end
+	boosting = true
+	indicator.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+	humanoid.WalkSpeed = 44
+	blur.Size = 15
 
-    wait(4)
+	wait(4)
 
-    humanoid.WalkSpeed = 16
-    indicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    blur.Size = 0
-    isBoosting = false
+	humanoid.WalkSpeed = 16
+	indicator.BackgroundColor3 = Color3.fromRGB(230, 20, 20)
+	blur.Size = 0
+	boosting = false
 end)
